@@ -1,0 +1,10 @@
+*
+
+!src
+!src/*.ts
+!styles
+!styles/*.css
+
+!index.html
+!package.json
+!tsconfig.json

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="uk">
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="styles/index.css">
+        <title>Перша лабораторна робота із компʼютерної графіки</title>
+    </head>
+    <body>
+        <div id="canvasContainer"></div>
+        <div id="controlsContainer">
+            <button class="add-button" id="addButton">+</button>
+            <div class="dropdown-menu" id="dropdownMenu">
+                <ul>
+                    <li class="shape-option-button" id="triangle"><span class="shape-option">Triangle</span></li>
+                </ul>
+            </div>
+            <div class="controls-tabs" id="controlsTabs">
+                <ul class="controls-list" id="controlsList"></ul>
+            </div>
+        </div>
+        <div class="modal" id="shapeModal">
+            <div class="modal-content">
+                <form id="shapeForm"></form>
+            </div>
+        </div>
+        <script src="dist/index.js" type="module"></script>
+    </body>
+</html>
