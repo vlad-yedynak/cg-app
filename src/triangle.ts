@@ -3,7 +3,7 @@ import { Shape } from "./shape.js";
 import { CartesianSystem } from "./cartesianSystem.js";
 
 export class Triangle extends Shape {
-    private _vertices: Point[];
+    private _vertices: Point[] = [];
     private _strokeStyle = '#000000';
     private _fillStyle = '#ffffff';
     private _altitude = 0;
@@ -11,7 +11,6 @@ export class Triangle extends Shape {
 
     public constructor(id: number) {
         super(id);
-        this._vertices = [];
     }
 
     public queryParameters(): any {
@@ -109,8 +108,8 @@ export class Triangle extends Shape {
         return {
             id: this._id,
             vertices: this._vertices || [],
-            strokeStyle: this._strokeStyle || '#000000',
-            fillStyle: this._fillStyle || '#ffffff',
+            lineColor: this._strokeStyle || '#000000',
+            fillColor: this._fillStyle || '#ffffff',
             altitude: this._altitude || 0,
             enableRectangle: this._enableRectangle || '',
         };

@@ -175,7 +175,7 @@ body {
     margin: auto;
     padding: 0;
     width: 90%;
-    max-width: 500px;
+    max-width: 550px;
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     overflow: hidden;
@@ -229,6 +229,51 @@ input.altitude-input:focus {
     box-shadow: 0 0 0 2px rgba(46, 120, 210, 0.15);
 }
 
+input.step-input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border 0.2s ease;
+}
+
+input.step-input:focus {
+    border-color: #2e78d2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(46, 120, 210, 0.15);
+}
+
+input.a-input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border 0.2s ease;
+}
+
+input.b-input:focus {
+    border-color: #2e78d2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(46, 120, 210, 0.15);
+}
+
+input.b-input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border 0.2s ease;
+}
+
+input.a-input:focus {
+    border-color: #2e78d2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(46, 120, 210, 0.15);
+}
+
 input.enableRectangleInput {
     flex-grow: 1;
     padding: 8px 12px;
@@ -255,6 +300,12 @@ input.enableRectangleInput:focus {
     align-items: center;
 }
 
+.range-input {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
 .coordinate-label {
     font-weight: 500;
     font-size: 14px;
@@ -276,6 +327,135 @@ input.coordinate-input:focus {
     border-color: #2e78d2;
     outline: none;
     box-shadow: 0 0 0 2px rgba(46, 120, 210, 0.15);
+}
+
+.range-inputs-container {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border 0.2s ease;
+    margin-right: 8px;
+}
+
+.row-selector-container {
+    margin-bottom: 8px;
+    padding: 5px;
+    background-color: #333;
+    border-radius: 4px;
+}
+
+.row-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.row-input {
+    width: 40px;
+    padding: 2px 4px;
+    border: 1px solid #000000;
+    border-radius: 3px;
+}
+
+.show-all-btn {
+    font-size: 12px;
+    padding: 2px 6px;
+    background-color: #eee;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.show-all-btn:hover {
+    background-color: #ddd;
+}
+
+.matrix-content-area {
+    overflow: auto;
+    max-height: 300px;
+    border: 1px solid #eee;
+    padding: 8px;
+    border-radius: 3px;
+}
+
+.matrix-content {
+    font-family: monospace;
+    white-space: pre;
+    margin: 0;
+}
+
+.info-tooltip {
+    position: absolute;
+    visibility: hidden;
+    opacity: 0;
+    background-color: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    z-index: 1000;
+    transition: opacity 0.2s ease-in-out;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.info-tooltip .matrix-content {
+    font-family: monospace;
+    white-space: pre;
+    margin: 0;
+    font-size: 13px;
+    text-align: left;
+}
+
+.info-icon {
+    cursor: pointer;
+    color: #555;
+    display: inline-flex;
+    margin-left: 8px;
+    position: relative;
+}
+
+.info-icon:hover {
+    color: #000;
+}
+
+.info-icon-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.info-content-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.range-label {
+    font-weight: 500;
+    font-size: 14px;
+    color: #666;
+    margin-right: 8px;
+    min-width: 20px;
+}
+
+input.range-input-field {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border 0.2s ease;
+}
+
+input.range-input-field:focus {
+    border-color: #2e78d2;
+    outline: none;
 }
 
 .color-picker-container {
@@ -347,6 +527,113 @@ input.coordinate-input:focus {
 .edit-button:hover {
     background-color: #999898;
     color: #3e3e3e;
+}
+
+.array-container {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.array-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.array-items {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.array-item-wrapper {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+.array-item-wrapper .form-group {
+    flex-grow: 1;
+    margin-bottom: 0;
+}
+
+.add-item-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+}
+
+.add-item-button:hover {
+    background-color: #45a049;
+}
+
+.remove-item-button {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    margin-left: 5px;
+    margin-top: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-item-button:hover {
+    background-color: #d32f2f;
+}
+
+.switch-control {
+    margin-bottom: 15px;
+}
+
+.switch-track {
+    display: flex;
+    border-radius: 4px;
+    background: #f0f0f0;
+    padding: 2px;
+    margin-top: 5px;
+}
+
+.switch-option {
+    flex: 1;
+    border: none;
+    background: none;
+    padding: 8px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    color: #555;
+}
+
+.switch-option:hover:not(.selected) {
+    background: rgba(0,0,0,0.05);
+}
+
+.switch-option.selected {
+    background: #2e78d2;
+    color: white;
+    font-weight: 500;
+}
+
+.switch-option:not(:last-child) {
+    margin-right: 2px;
 }
 
 @media screen and (max-width: 768px) {

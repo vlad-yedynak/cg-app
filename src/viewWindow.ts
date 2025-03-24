@@ -115,7 +115,9 @@ export class ViewWindow {
                    name="${key}" 
                    type="${inputType}"
                    step="any"
-                   class="${key}-input" 
+                   min="${config['min']}"
+                   max="${config['max']}"
+                   class="${key}-input"
                    required
                    value=${defaultValue}>
         </div>
@@ -150,20 +152,21 @@ export class ViewWindow {
         const shapeForm = <HTMLFormElement>document.getElementById('shapeForm');
 
         shapeForm.innerHTML = '';
-
         const isEditing = !!shapeToEdit;
+
         const modalTitle = isEditing ? `Edit ${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)}` :
             `Add ${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)}`;
-
         const modalHeader = document.createElement('div');
         modalHeader.className = 'modal-header';
         modalHeader.innerHTML = `<h2>${modalTitle}</h2>`;
-        shapeForm.appendChild(modalHeader);
 
+        shapeForm.appendChild(modalHeader);
         const shapeId = isEditing ? shapeToEdit.id : this._nextShapeId;
         let shape = isEditing ? shapeToEdit : (new ShapeFactory()).getShapeByType(shapeType, shapeId);
         if (shape === null) {
+            shapeModal.style.display = 'none';
             return;
+
         }
 
         const idField = document.createElement('input');
@@ -208,8 +211,15 @@ export class ViewWindow {
                     break;
                 case 'color':
                     const isStroke = key === 'lineColor';
-                    const defaultColor = isEditing ?
-                        (isStroke ? shapeProperties.strokeStyle : shapeProperties.fillStyle) : '';
+                    const isAltStroke = key === 'altLineColor';
+                    let defaultColor = '';
+                    if (isEditing && isStroke) {
+                        defaultColor = shapeProperties.lineColor;
+                    } else if (isEditing && isAltStroke) {
+                        defaultColor = shapeProperties.altLineColor;
+                    } else if (isEditing) {
+                        defaultColor = shapeProperties.fillColor;
+                    }
                     formFields.appendChild(this.renderColorForm(key, parameterConfig, defaultColor));
                     break;
                 case 'input':
@@ -218,10 +228,28 @@ export class ViewWindow {
                     formFields.appendChild(this.renderInputForm(key, parameterConfig, defaultInputValue));
                     break;
                 case 'checkbox':
-                    console.log(shapeProperties);
                     const defaultCheckboxValue = isEditing && shapeProperties[key] ?
                         shapeProperties[key] : '';
                     formFields.appendChild(this.renderCheckbox(key, parameterConfig, defaultCheckboxValue));
+                    break;
+                case 'array':
+                    const defaultArray = isEditing && shapeProperties[key] ?
+                        shapeProperties[key] : {};
+                    formFields.appendChild(this.renderArrayElement(key, parameterConfig, defaultArray));
+                    break;
+                case 'range':
+                    const defaultRange = isEditing && shapeProperties[key] ?
+                        shapeProperties[key] : {};
+                    formFields.appendChild(this.renderRangeElement(key, parameterConfig, defaultRange));
+                    break;
+                case 'info':
+                    const infoLabel = shapeProperties['infoContent'];
+                    formFields.appendChild(this.renderInfoPopup(parameterConfig, infoLabel));
+                    break;
+                case 'switch':
+                    const currentOption = isEditing && shapeProperties[key] ?
+                        shapeProperties[key] : '';
+                    formFields.appendChild(this.renderSwitchElement(key, parameterConfig, currentOption));
                     break;
                 default:
                     break;
@@ -239,6 +267,515 @@ export class ViewWindow {
         shapeForm.appendChild(modalButtons);
     }
 
+    private renderSwitchElement(key: string, config: any, currentSwitch: string = ''): HTMLDivElement {
+        const switchContainer = document.createElement('div');
+        switchContainer.className = 'form-group switch-control';
+
+        const label = document.createElement('div');
+        label.className = 'field-label';
+        label.textContent = config.label || 'Options';
+        switchContainer.appendChild(label);
+
+        const switchTrack = document.createElement('div');
+        switchTrack.className = 'switch-track';
+
+        const options = [];
+        let optionIndex = 0;
+
+        while (config[`options`][`option${optionIndex}`] !== undefined) {
+            options.push({
+                value: `option${optionIndex}`,
+                label: config[`options`][`option${optionIndex}`]
+            });
+            optionIndex++;
+        }
+
+        if (options.length === 0) {
+            options.push({ value: 'option0', label: 'Option 1' });
+            options.push({ value: 'option1', label: 'Option 2' });
+        }
+
+        let selectedOption = currentSwitch;
+        if (!selectedOption || !options.some(opt => opt.value === selectedOption)) {
+            selectedOption = options[0].value;
+        }
+
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = key;
+        hiddenInput.id = `${key}Input`;
+        hiddenInput.value = selectedOption;
+        switchContainer.appendChild(hiddenInput);
+
+        options.forEach((option) => {
+            const switchButton = document.createElement('button');
+            switchButton.type = 'button';
+            switchButton.className = 'switch-option';
+            switchButton.dataset.value = option.value;
+            switchButton.textContent = option.label;
+
+            if (option.value === selectedOption) {
+                switchButton.classList.add('selected');
+            }
+
+            switchButton.addEventListener('click', () => {
+                hiddenInput.value = option.value;
+
+                switchTrack.querySelectorAll('.switch-option').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                switchButton.classList.add('selected');
+
+                const changeEvent = new CustomEvent('switch-changed', {
+                    detail: { key, value: option.value }
+                });
+                document.dispatchEvent(changeEvent);
+            });
+
+            switchTrack.appendChild(switchButton);
+        });
+
+        switchContainer.appendChild(switchTrack);
+
+        return switchContainer;
+    }
+
+    private renderInfoPopup(config: any, label: string): HTMLDivElement {
+        const infoContainer = document.createElement('div');
+        infoContainer.className = 'form-group info-popup';
+
+        const fieldLabel = document.createElement('div');
+        fieldLabel.className = 'field-label';
+        fieldLabel.textContent = config.label || 'Information';
+
+        const infoIconWrapper = document.createElement('div');
+        infoIconWrapper.className = 'info-icon-wrapper';
+
+        const infoIcon = document.createElement('div');
+        infoIcon.className = 'info-icon';
+        infoIcon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+    </svg>`;
+
+        const tooltip = document.createElement('div');
+        tooltip.className = 'info-tooltip';
+        tooltip.style.position = 'absolute';
+        tooltip.style.zIndex = '1000';
+        tooltip.style.visibility = 'hidden';
+        tooltip.style.opacity = '0';
+        tooltip.style.transition = 'opacity 0.2s';
+
+        let matrixRows: string[] = [];
+        if (label && label.includes('\n')) {
+            matrixRows = label.split('\n');
+        }
+
+        const actualMatrixRows = matrixRows.filter(row => row.trim().startsWith('['));
+        const rowCount = actualMatrixRows.length;
+
+        const rowSelectorContainer = document.createElement('div');
+        rowSelectorContainer.className = 'row-selector-container';
+
+        const rowSelector = document.createElement('div');
+        rowSelector.className = 'row-selector';
+
+        const rowLabel = document.createElement('span');
+        rowLabel.textContent = 'Show row: ';
+
+        const rowInput = document.createElement('input');
+        rowInput.type = 'number';
+        rowInput.min = '0';
+        rowInput.max = rowCount > 0 ? (rowCount - 1).toString() : '0';
+        rowInput.value = '0';
+        rowInput.className = 'row-input';
+        rowInput.style.width = '40px';
+        rowInput.title = `Enter a row number between 0 and ${rowCount > 0 ? (rowCount - 1) : 0}`;
+
+        const showAllButton = document.createElement('button');
+        showAllButton.textContent = 'Show All';
+        showAllButton.className = 'show-all-btn';
+        showAllButton.type = 'button';
+
+        rowSelector.appendChild(rowLabel);
+        rowSelector.appendChild(rowInput);
+        rowSelector.appendChild(showAllButton);
+
+        const contentArea = document.createElement('div');
+        contentArea.className = 'matrix-content-area';
+
+        if (label && label.includes('\n')) {
+            const preElement = document.createElement('pre');
+            preElement.className = 'matrix-content';
+            preElement.textContent = label;
+            contentArea.appendChild(preElement);
+        } else {
+            contentArea.textContent = label || '';
+        }
+
+        rowInput.addEventListener('input', (e) => {
+            e.stopPropagation();
+
+            let rowIndex = parseInt(rowInput.value);
+
+            if (isNaN(rowIndex) || rowIndex < 0) {
+                rowIndex = 0;
+                rowInput.value = '0';
+            } else if (rowIndex >= rowCount) {
+                rowIndex = rowCount - 1;
+                rowInput.value = (rowCount - 1).toString();
+            }
+
+            const titleLine = matrixRows.find(row => row.includes('Matrix:')) || '';
+
+            const preElement = contentArea.querySelector('.matrix-content') as HTMLPreElement;
+            if (preElement) {
+                if (rowCount > 0) {
+                    const selectedRow = actualMatrixRows[rowIndex];
+                    preElement.textContent = `${titleLine}\nRow ${rowIndex}:\n${selectedRow}`;
+                } else {
+                    preElement.textContent = label;
+                }
+            }
+        });
+
+        rowInput.addEventListener('click', (e) => e.stopPropagation());
+        rowInput.addEventListener('mousedown', (e) => e.stopPropagation());
+
+        showAllButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const preElement = contentArea.querySelector('.matrix-content') as HTMLPreElement;
+            if (preElement) {
+                preElement.textContent = label;
+            }
+        });
+
+        showAllButton.addEventListener('mousedown', (e) => e.stopPropagation());
+
+        rowSelectorContainer.appendChild(rowSelector);
+        tooltip.appendChild(rowSelectorContainer);
+        tooltip.appendChild(contentArea);
+
+        infoIconWrapper.appendChild(infoIcon);
+        infoIconWrapper.appendChild(tooltip);
+
+        let tooltipVisible = false;
+
+        infoIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+
+            if (!label || contentArea.textContent === '') {
+                return;
+            }
+
+            tooltipVisible = !tooltipVisible;
+
+            document.querySelectorAll('.info-tooltip').forEach(el => {
+                if (el !== tooltip) {
+                    (el as HTMLElement).style.visibility = 'hidden';
+                    (el as HTMLElement).style.opacity = '0';
+                }
+            });
+
+            tooltip.style.visibility = tooltipVisible ? 'visible' : 'hidden';
+            tooltip.style.opacity = tooltipVisible ? '1' : '0';
+
+            if (tooltipVisible) {
+                positionTooltip();
+            }
+        });
+
+        const positionTooltip = () => {
+            const rect = tooltip.getBoundingClientRect();
+            const isOutOfRight = rect.right > window.innerWidth;
+            const isOutOfBottom = rect.bottom > window.innerHeight;
+
+            if (isOutOfRight) {
+                tooltip.style.left = 'auto';
+                tooltip.style.right = '100%';
+                tooltip.style.marginRight = '8px';
+                tooltip.style.marginLeft = '0';
+            } else {
+                tooltip.style.left = '100%';
+                tooltip.style.right = 'auto';
+                tooltip.style.marginLeft = '8px';
+                tooltip.style.marginRight = '0';
+            }
+
+            if (isOutOfBottom) {
+                tooltip.style.top = 'auto';
+                tooltip.style.bottom = '0';
+            } else {
+                tooltip.style.top = '0';
+                tooltip.style.bottom = 'auto';
+            }
+        };
+
+        tooltip.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        tooltip.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (tooltipVisible && !infoIconWrapper.contains(e.target as Node) &&
+                !tooltip.contains(e.target as Node)) {
+                tooltipVisible = false;
+                tooltip.style.visibility = 'hidden';
+                tooltip.style.opacity = '0';
+            }
+        });
+
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'info-content-wrapper';
+        contentWrapper.appendChild(fieldLabel);
+        contentWrapper.appendChild(infoIconWrapper);
+
+        infoContainer.appendChild(contentWrapper);
+
+        return infoContainer;
+    }
+
+    private renderRangeElement(key: string, config: any, defaultValues: any = {}): HTMLDivElement {
+        const rangeContainer = document.createElement('div');
+        rangeContainer.className = 'form-group range-inputs';
+
+        const label = document.createElement('div');
+        label.className = 'field-label';
+        label.textContent = config.label || 'Range';
+        rangeContainer.appendChild(label);
+
+        const inputsContainer = document.createElement('div');
+        inputsContainer.className = 'range-inputs-container';
+
+        const defaultMinValue = defaultValues.min?.toString() || '';
+        const defaultMaxValue = defaultValues.max?.toString() || '';
+
+        const minInputContainer = document.createElement('div');
+        minInputContainer.className = 'range-input';
+        minInputContainer.innerHTML = `
+        <label for="${key}Min" class="range-label">Min:</label>
+        <input id="${key}Min" name="${key}Min" type="number" step="any" class="range-input-field" value="${defaultMinValue}">
+    `;
+
+        const maxInputContainer = document.createElement('div');
+        maxInputContainer.className = 'range-input';
+        maxInputContainer.innerHTML = `
+        <label for="${key}Max" class="range-label">Max: </label>
+        <input id="${key}Max" name="${key}Max" type="number" step="any" class="range-input-field" value="${defaultMaxValue}">
+    `;
+
+        inputsContainer.appendChild(minInputContainer);
+        inputsContainer.appendChild(maxInputContainer);
+        rangeContainer.appendChild(inputsContainer);
+
+        const form = document.getElementById('shapeForm');
+        if (form) {
+            const minInput = minInputContainer.querySelector(`#${key}Min`) as HTMLInputElement;
+            const maxInput = maxInputContainer.querySelector(`#${key}Max`) as HTMLInputElement;
+
+            if (minInput && maxInput) {
+                minInput.addEventListener('input', () => {
+                    if (parseFloat(minInput.value) > parseFloat(maxInput.value)) {
+                        maxInput.value = minInput.value;
+                    }
+                });
+
+                maxInput.addEventListener('input', () => {
+                    if (parseFloat(maxInput.value) < parseFloat(minInput.value)) {
+                        minInput.value = maxInput.value;
+                    }
+                });
+            }
+
+            const observer = new MutationObserver(() => {
+                this.updateRangeConstraints(form, key);
+            });
+
+            observer.observe(form, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['value']
+            });
+
+            setTimeout(() => this.updateRangeConstraints(form, key), 100);
+
+            form.addEventListener('input', (e) => {
+                if (e.target instanceof HTMLInputElement && e.target.name.endsWith('X')) {
+                    this.updateRangeConstraints(form, key);
+                }
+            });
+        }
+
+        return rangeContainer;
+    }
+
+    private updateRangeConstraints(form: HTMLElement, rangeKey: string): void {
+        const xInputs = form.querySelectorAll('input[name$="X"]');
+
+        if (xInputs.length === 0) return;
+
+        const xValues = Array.from(xInputs)
+            .map(input => parseFloat((input as HTMLInputElement).value))
+            .filter(value => !isNaN(value));
+
+        if (xValues.length === 0) return;
+
+        const minX = Math.min(...xValues);
+        const maxX = Math.max(...xValues);
+
+        const minInput = form.querySelector(`#${rangeKey}Min`) as HTMLInputElement;
+        const maxInput = form.querySelector(`#${rangeKey}Max`) as HTMLInputElement;
+
+        if (minInput && maxInput) {
+            minInput.min = minX.toString();
+            minInput.max = maxX.toString();
+            maxInput.min = minX.toString();
+            maxInput.max = maxX.toString();
+
+            if (parseFloat(minInput.value) < minX) minInput.value = minX.toString();
+            if (parseFloat(minInput.value) > maxX) minInput.value = minX.toString();
+            if (parseFloat(maxInput.value) < minX) maxInput.value = maxX.toString();
+            if (parseFloat(maxInput.value) > maxX) maxInput.value = maxX.toString();
+
+            if (parseFloat(minInput.value) > parseFloat(maxInput.value)) {
+                minInput.value = maxInput.value;
+            }
+        }
+    }
+
+    private renderArrayElement(key: string, config: any, defaultArray: any): HTMLDivElement {
+        const arrayContainer = document.createElement('div');
+        arrayContainer.className = 'array-container form-group';
+
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'array-header';
+
+        const label = document.createElement('div');
+        label.className = 'field-label';
+        label.textContent = config.label || 'Points';
+
+        const addButton = document.createElement('button');
+        addButton.type = 'button';
+        addButton.className = 'add-item-button';
+        addButton.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Point';
+
+        headerDiv.appendChild(label);
+        headerDiv.appendChild(addButton);
+
+        const itemsContainer = document.createElement('div');
+        itemsContainer.className = 'array-items';
+        itemsContainer.id = `${key}-items`;
+
+        let itemCount = 0;
+        if (defaultArray && Array.isArray(defaultArray) && defaultArray.length > 0) {
+            defaultArray.forEach((point: any, index: number) => {
+                if (point && typeof point.x !== 'undefined' && typeof point.y !== 'undefined') {
+                    const itemConfig = {
+                        type: 'point',
+                        label: `Point ${index + 1}`
+                    };
+
+                    const itemKey = `${key}${index}`;
+                    const itemElement = this.renderArrayItemElement(
+                        itemKey,
+                        itemConfig,
+                        point.x.toString(),
+                        point.y.toString(),
+                        itemsContainer
+                    );
+
+                    itemsContainer.appendChild(itemElement);
+                    itemCount++;
+                }
+            });
+        }
+
+        if (itemCount === 0) {
+            const minElementCount = config.minElementCount || 0;
+            for (let i = 0; i < minElementCount; ++i) {
+                let itemConfig = {
+                    type: 'point',
+                    label: `Point ${i + 1}`
+                };
+                let itemKey = `${key + i.toString()}`;
+                let itemElement = this.renderArrayItemElement(
+                    itemKey,
+                    itemConfig,
+                    '',
+                    '',
+                    itemsContainer
+                );
+
+                itemsContainer.appendChild(itemElement);
+            }
+        }
+
+        itemsContainer.dataset.itemCount = itemCount.toString();
+
+        addButton.addEventListener('click', () => {
+            const currentCount = itemsContainer.childElementCount;
+            const newItemKey = `${key}${currentCount}`;
+
+            const newItemConfig = {
+                type: 'point',
+                label: `Point ${currentCount + 1}`
+            };
+
+            const newItemElement = this.renderArrayItemElement(
+                newItemKey,
+                newItemConfig,
+                '',
+                '',
+                itemsContainer
+            );
+
+            itemsContainer.appendChild(newItemElement);
+            itemsContainer.dataset.itemCount = (currentCount + 1).toString();
+            newItemElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+
+        arrayContainer.appendChild(headerDiv);
+        arrayContainer.appendChild(itemsContainer);
+
+        return arrayContainer;
+    }
+
+    private renderArrayItemElement(key: string, config: any, defaultX: string, defaultY: string, container: HTMLElement): HTMLDivElement {
+        const itemWrapper = document.createElement('div');
+        itemWrapper.className = 'array-item-wrapper';
+
+        const pointForm = this.renderPointForm(key, config, defaultX, defaultY);
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'remove-item-button';
+        removeButton.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+        removeButton.title = 'Remove point';
+
+        removeButton.addEventListener('click', () => {
+            let nextSibling = itemWrapper.nextSibling;
+            while (nextSibling) {
+                const currentSibling = nextSibling;
+                nextSibling = nextSibling.nextSibling;
+                currentSibling.remove();
+            }
+
+            itemWrapper.remove();
+        });
+
+        itemWrapper.appendChild(pointForm);
+
+        if (container.childElementCount >= 2) {
+            itemWrapper.appendChild(removeButton);
+        }
+
+        return itemWrapper;
+    }
 
     private renderColorForm(key: string, config: any, defaultColor: string = ''): HTMLDivElement {
         const validColor = defaultColor && /^#[0-9A-Fa-f]{6}$/.test(defaultColor) ?
@@ -380,6 +917,10 @@ export class ViewWindow {
             case 'triangle':
                 return `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                         <path d="M12 2L22 20H2L12 2z"></path>
+                    </svg>`;
+            case 'bezier':
+                return `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                        <path d="M4 16C8 4 16 20 20 8"></path>
                     </svg>`;
             default:
                 return `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
