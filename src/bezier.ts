@@ -305,6 +305,7 @@ export class Bezier extends Shape {
             ++index;
         }
 
+        this._id = parameters.id || 0;
         this._step = parseFloat(parameters['step']);
         this._refColor = parameters.fillColor || '#000000';
         this._curveColor = parameters.lineColor || '#000000';

@@ -36,7 +36,13 @@ body {
     overflow-y: auto;
 }
 
-#addButton {
+#buttonsContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.add-button {
     background-color: #2e78d2;
     color: white;
     width: 36px;
@@ -53,7 +59,28 @@ body {
     transition: all 0.2s ease;
 }
 
-#addButton:hover {
+.add-button:hover {
+    background-color: #1a65c0;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+#snapshotButton {
+    background-color: #2e78d2;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+#snapshotButton:hover {
     background-color: #1a65c0;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
     transform: translateY(-1px);
@@ -212,6 +239,28 @@ body {
     flex: 1;
     display: flex;
     align-items: center;
+}
+
+input.coordinate-input.invalid {
+    border-color: red;
+    border-width: 1px;
+    border-style: solid;
+    background-color: #ffeeee;
+}
+
+input.form-input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border 0.2s ease;
+}
+
+input.form-input:focus {
+    border-color: #2e78d2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(46, 120, 210, 0.15);
 }
 
 input.altitude-input {
@@ -456,6 +505,66 @@ input.range-input-field {
 input.range-input-field:focus {
     border-color: #2e78d2;
     outline: none;
+}
+
+input.edgeCount-input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border 0.2s ease;
+}
+
+input.edgeCount-input:focus {
+    border-color: #2e78d2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(46, 120, 210, 0.15);
+}
+
+input.iterationsCount-input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border 0.2s ease;
+}
+
+input.iterationsCount-input:focus {
+    border-color: #2e78d2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(46, 120, 210, 0.15);
+}
+
+input.triangleBaseAngle-input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border 0.2s ease;
+}
+
+input.triangleBaseAngle-input:focus {
+    border-color: #2e78d2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(46, 120, 210, 0.15);
+}
+
+input.triangleBaseLength-input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border 0.2s ease;
+}
+
+input.triangleBaseLength-input:focus {
+    border-color: #2e78d2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(46, 120, 210, 0.15);
 }
 
 .color-picker-container {

@@ -2,12 +2,14 @@ import { Point } from "./point.js";
 import { Shape } from "./shape.js";
 import { CartesianSystem } from "./cartesianSystem.js";
 
-export class Triangle extends Shape {
+
+export class AnimatedSquare extends Shape {
     private _vertices: Point[] = [];
+    private _originalVertices: Point[] = [];
     private _strokeStyle = '#000000';
     private _fillStyle = '#ffffff';
-    private _altitude = 0;
-    private _enableRectangle = '';
+    private _rotationSpeed = 0;
+    private _verticalSpeed = 0;
 
     public constructor(id: number) {
         super(id);
@@ -26,10 +28,23 @@ export class Triangle extends Shape {
                 type: 'point',
                 label: 'Second Point'
             },
-            altitude: {
+            point2: {
+                type: 'point',
+                label: 'Third Point'
+            },
+            point3: {
+                type: 'point',
+                label: 'Fourth Point'
+            },
+            rotationSpeed: {
                 type: 'input',
                 inputType: 'number',
-                label: 'Altitude'
+                label: 'Rotation Speed'
+            },
+            verticalSpeed: {
+                type: 'input',
+                inputType: 'number',
+                label: 'Vertical Speed'
             },
             lineColor: {
                 type: 'color',
@@ -38,10 +53,6 @@ export class Triangle extends Shape {
             fillColor: {
                 type: 'color',
                 label: 'Fill Color'
-            },
-            enableRectangle: {
-                type: 'checkbox',
-                label: 'Enable Rectangle'
             }
         };
     }
@@ -75,86 +86,63 @@ export class Triangle extends Shape {
             }
         }
 
+        this._originalVertices = this.copyVertices(this._vertices);
+        this._verticalSpeed = parameters.verticalSpeed || 0;
+        this._rotationSpeed = parameters.rotationSpeed || 0;
         this._fillStyle = parameters.fillColor || '#0000FF';
         this._strokeStyle = parameters.lineColor || '#000000';
-        this._altitude = parseFloat(parameters.altitude) || 0;
-        this._enableRectangle = parameters.enableRectangle || '';
-
-        if (this._vertices.length >= 2) {
-            this._vertices.push(this.calculateThirdPoint());
-        }
-    }
-
-    private calculateThirdPoint(): Point {
-        const firstPoint = <Point>this._vertices[0];
-        const secondPoint = <Point>this._vertices[1];
-        const middlePoint = new Point(
-            firstPoint.x + (secondPoint.x - firstPoint.x) / 2,
-            firstPoint.y + (secondPoint.y - firstPoint.y) / 2
-        );
-
-        const baseAngle = Math.atan2(
-            secondPoint.y - firstPoint.y,
-            secondPoint.x - firstPoint.x
-        );
-        const altitudeAngle = baseAngle + Math.PI / 2;
-
-        return new Point(
-            middlePoint.x + Math.cos(altitudeAngle) * this._altitude,
-            middlePoint.y + Math.sin(altitudeAngle) * this._altitude
-        );
     }
 
     public override getParameters(): any {
         return {
             id: this._id,
-            vertices: this._vertices || [],
+            vertices: this._originalVertices || [],
+            verticalSpeed: this._verticalSpeed || 0,
+            rotationSpeed: this._rotationSpeed || 0,
             lineColor: this._strokeStyle || '#000000',
-            fillColor: this._fillStyle || '#ffffff',
-            altitude: this._altitude || 0,
-            enableRectangle: this._enableRectangle || '',
+            fillColor: this._fillStyle || '#ffffff'
         };
     }
 
-    private enableRectangle(system: CartesianSystem) {
-        if (this._vertices.length < 3) {
-            return;
-        }
+    public override validateParameters(parameters: any): boolean {
+        this.processParameters(parameters);
+        let sideA = this._vertices[0].distanceTo(this._vertices[1]);
+        let sideB = this._vertices[1].distanceTo(this._vertices[2]);
+        let sideC = this._vertices[2].distanceTo(this._vertices[3]);
+        let sideD = this._vertices[3].distanceTo(this._vertices[0]);
+        let diagonalA = this._vertices[0].distanceTo(this._vertices[2]);
+        let diagonalB = this._vertices[1].distanceTo(this._vertices[3]);
 
-        const ctx = system.context2D;
-        const offsetPosition = system.currentPosition.offset(system.scale);
+        return sideA == sideB &&
+            sideB == sideC &&
+            sideC == sideD &&
+            diagonalA == diagonalB;
+    }
 
-        let minX = Number.MAX_VALUE;
-        let minY = Number.MAX_VALUE;
-        let maxX = Number.MIN_VALUE;
-        let maxY = Number.MIN_VALUE;
+    private transform(): void {
+        const sin = Math.sin(Math.PI / 180 * this._rotationSpeed);
+        const cos = Math.cos(Math.PI / 180 * this._rotationSpeed);
+        const center = new Point(
+            (this._vertices[2].x + this._vertices[0].x) / 2,
+            (this._vertices[2].y + this._vertices[0].y) / 2
+        );
 
-        this._vertices.forEach(vertex => {
-            const transformedVertex = vertex.transform(
-                system.canvas.width,
-                system.canvas.height,
-                system.scale
-            );
+        this._vertices.forEach((vertex) => {
+            const x = vertex.x - center.x;
+            const y = vertex.y - center.y;
+            vertex.x = x * cos - y * sin + center.x;
+            vertex.y = x * sin + y * cos + center.y;
+            vertex.y += 0.01 * this._verticalSpeed;
+        })
+    }
 
-            minX = Math.min(minX, transformedVertex.x + offsetPosition.x);
-            minY = Math.min(minY, transformedVertex.y + offsetPosition.y);
-            maxX = Math.max(maxX, transformedVertex.x + offsetPosition.x);
-            maxY = Math.max(maxY, transformedVertex.y + offsetPosition.y);
-        });
-
-        ctx.save();
-        ctx.strokeStyle = '#555555';
-        ctx.lineWidth = 2;
-
-        ctx.beginPath();
-        ctx.rect(minX, minY, maxX - minX, maxY - minY);
-        ctx.stroke();
-
-        ctx.restore();
+    public calculateFrame(): void
+    {
+        this.transform();
     }
 
     public draw(system: CartesianSystem): void {
-        if (this._vertices.length < 3) {
+        if (this._vertices.length < 4) {
             return;
         }
 
@@ -193,9 +181,20 @@ export class Triangle extends Shape {
         ctx.stroke();
 
         ctx.restore();
+    }
 
-        if (this._enableRectangle === 'checked' || this._enableRectangle === 'true') {
-            this.enableRectangle(system);
-        }
+    public reset(): void {
+        this._vertices = this.copyVertices(this._originalVertices);
+    }
+
+    private copyVertices(source: Point[]): Point[] {
+        let result: Point[] = [];
+
+        source.forEach((vertex) => {
+            let clone = new Point(vertex.x, vertex.y);
+            result.push(clone);
+        })
+
+        return result;
     }
 }

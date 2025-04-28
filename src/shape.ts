@@ -13,9 +13,14 @@ export abstract class Shape {
 
     public abstract queryParameters(): any;
 
-    public abstract processParameters(parameters: any): void;
+    public abstract processParameters(parameters: any): void
 
     public abstract draw(system: CartesianSystem): void
+
+    public validateParameters(parameters: any): boolean
+    {
+        return true;
+    }
 
     public getParameters(): any {
         return { id: this._id };

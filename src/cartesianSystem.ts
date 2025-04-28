@@ -1,5 +1,6 @@
 import { Point } from "./point.js"
 import { Shape } from "./shape.js";
+import {AnimatedSquare} from "./animatedSquare.js";
 
 export class CartesianSystem {
     private readonly _canvas: HTMLCanvasElement;
@@ -10,6 +11,8 @@ export class CartesianSystem {
 
     private readonly _shapes: Shape[];
 
+    public isPaused: boolean = true;
+
     public constructor(canvas: HTMLCanvasElement) {
         this._canvas = canvas;
         this._context2D = <CanvasRenderingContext2D>canvas.getContext('2d');
@@ -18,6 +21,8 @@ export class CartesianSystem {
         this._scale = 50;
 
         this._shapes = [];
+
+        this.initializeLoop();
     }
 
     public get scale(): number {
@@ -36,15 +41,47 @@ export class CartesianSystem {
         return this._currentPosition;
     }
 
+    public initializeLoop(): void {
+        setTimeout(this.initializeLoop.bind(this), 10);
+
+        if (this.isPaused)
+        {
+            return;
+        }
+
+        this.drawFrame();
+    }
+
     public draw(): void {
         this._context2D.clearRect(0, 0, this._canvas.width, this._canvas.height);
+
+        this.drawShapes();
 
         this.drawGrid();
         this.drawAbscissaAxis();
         this.drawOrdinateAxis();
         this.drawLabels();
+    }
 
-        this.drawShapes();
+    public drawFrame() {
+        this._shapes.forEach((shape: Shape) => {
+            if (shape instanceof AnimatedSquare) {
+                shape.calculateFrame();
+            }
+
+            this.draw();
+        })
+    }
+
+    public resetAnimation(): void
+    {
+        this._shapes.forEach((shape: Shape) => {
+            if (shape instanceof AnimatedSquare) {
+                shape.reset();
+            }
+        })
+
+        this.draw();
     }
 
     public move(position: Point): void {
@@ -108,7 +145,7 @@ export class CartesianSystem {
         return start;
     }
 
-    private calculatePoints() {
+    public calculatePoints() {
         let viewWidth = this._canvas.width;
         let viewHeight = this._canvas.height;
         let transformedPosition = this._currentPosition.transform(viewWidth, viewHeight, this._scale);
@@ -258,5 +295,20 @@ export class CartesianSystem {
         this._shapes.forEach(shape => {
             shape.draw(this)
         });
+    }
+
+    public takeSnapshot(): void {
+        this._context2D.clearRect(0, 0, this._canvas.width, this._canvas.height);
+        this.drawShapes();
+
+        const link = document.createElement('a');
+        link.download = 'canvas-snapshot-' + new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-') + '.png';
+        link.href = this._canvas.toDataURL('image/png');
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        this.draw();
     }
 }

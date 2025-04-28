@@ -44,7 +44,10 @@ export class ViewWindow {
 
         const options = document.querySelectorAll('.shape-option-button');
         options.forEach(option => {
-            option.addEventListener('click', () => this.openShapeModal(option.id));
+            option.addEventListener('click', () => {
+                this.closeShapeMenu();
+                this.openShapeModal(option.id)
+            });
         });
 
         document.addEventListener('click', (e) => {
@@ -65,6 +68,24 @@ export class ViewWindow {
                 this.closeShapeModal();
             }
         });
+
+        const snapshotButton = <HTMLElement>document.getElementById('snapshotButton');
+        snapshotButton.addEventListener('click', () => {
+            this._system.takeSnapshot();
+        });
+
+        const playPauseButton = <HTMLElement>document.getElementById('playPauseButton') as HTMLButtonElement;
+        playPauseButton.addEventListener('click', () => {
+            this._system.isPaused = !this._system.isPaused;
+            playPauseButton.textContent = this._system.isPaused ? "⏵" : "⏸";
+        });
+
+        const stopButton = <HTMLElement>document.getElementById('stopButton') as HTMLButtonElement;
+        stopButton.addEventListener('click', () => {
+            this._system.isPaused = true;
+            playPauseButton.textContent = "⏵";
+            this._system.resetAnimation();
+        });
     }
 
     private toggleShapeMenu(): void {
@@ -82,27 +103,6 @@ export class ViewWindow {
         dropdown.style.display = 'none';
     }
 
-    private renderPointForm(key: string, config: any, defaultX: string = '', defaultY: string = ''): HTMLDivElement {
-        let pointForm = document.createElement('div');
-
-        pointForm.className = 'form-group';
-        pointForm.innerHTML = `
-            <div class="field-label">${config.label}</div>
-            <div class="point-inputs">
-                <div class="point-input">
-                    <label for="${key}X" class="coordinate-label">X:</label>
-                    <input id="${key}X" name="${key}X" type="number" step="any" required class="coordinate-input" value="${defaultX}">
-                </div>
-                <div class="point-input">
-                    <label for="${key}Y" class="coordinate-label">Y:</label>
-                    <input id="${key}Y" name="${key}Y" type="number" step="any" required class="coordinate-input" value="${defaultY}">
-                </div>
-            </div>
-        `;
-
-        return pointForm;
-    }
-
     private renderInputForm(key: string, config: any, defaultValue: string = ''): HTMLDivElement {
         let inputForm = document.createElement('div');
         inputForm.className = 'form-group';
@@ -117,7 +117,8 @@ export class ViewWindow {
                    step="any"
                    min="${config['min']}"
                    max="${config['max']}"
-                   class="${key}-input"
+                   class="${key}-input form-input"
+                   pattern="${config['pattern']}"
                    required
                    value=${defaultValue}>
         </div>
@@ -265,6 +266,104 @@ export class ViewWindow {
         <button class="btn-primary" id="addShapeButton" type="submit">${isEditing ? 'Update' : 'Save'}</button>
     `;
         shapeForm.appendChild(modalButtons);
+    }
+
+    private handleFormSubmit(e: SubmitEvent, form: HTMLFormElement): void {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        let parameters: any = {};
+
+        formData.forEach((value, key) => {
+            parameters[key] = value;
+        });
+
+        const shapeType = parameters.type;
+        const shapeId = parseInt(parameters.id);
+        const isEditing = parameters.isEditing === 'true';
+
+        if (!shapeType || isNaN(shapeId)) {
+            console.error('Missing shape type or ID');
+            return;
+        }
+
+        if (isEditing) {
+            const existingShape = this._system.findShapeById(shapeId) as Shape;
+
+            if (!existingShape?.validateParameters(parameters))
+            {
+                let inputs = document.querySelectorAll('.coordinate-input');
+                inputs.forEach(input => {
+                    input.classList.add('invalid');
+                });
+                alert("Input points do not make a square");
+
+                return;
+            } else {
+                let inputs = document.querySelectorAll('.coordinate-input');
+                inputs.forEach(input => {
+                    input.classList.remove('invalid');
+                });
+            }
+
+            if (existingShape) {
+                existingShape.processParameters(parameters);
+                this.closeShapeModal();
+                this.draw();
+            }
+        } else {
+            let shape = (new ShapeFactory()).getShapeByType(shapeType, shapeId);
+            if (shape === null) {
+                return;
+            }
+
+            if (!shape.validateParameters(parameters))
+            {
+                console.log("Shisis");
+                let inputs = document.querySelectorAll('.coordinate-input');
+                inputs.forEach(input => {
+                    input.classList.add('invalid');
+                });
+                alert("Input points do not make a square");
+
+                return;
+            } else {
+                console.log("sfjow0ojf0jo0");
+                let inputs = document.querySelectorAll('.coordinate-input');
+                inputs.forEach(input => {
+                    input.classList.remove('invalid');
+                });
+            }
+
+            shape.processParameters(parameters);
+            this.closeShapeModal();
+            this._system.addShape(shape);
+            this.addShapeTab(shape, shapeType);
+
+            this._nextShapeId++;
+            this.draw();
+        }
+    }
+
+    private renderPointForm(key: string, config: any, defaultX: string = '', defaultY: string = ''): HTMLDivElement {
+        let pointForm = document.createElement('div');
+
+        pointForm.className = 'form-group';
+        pointForm.innerHTML = `
+            <div class="field-label">${config.label}</div>
+            <div class="point-inputs">
+                <div class="point-input">
+                    <label for="${key}X" class="coordinate-label">X:</label>
+                    <input id="${key}X" name="${key}X" type="number" step="any" required class="coordinate-input" value="${defaultX}">
+                </div>
+                <div class="point-input">
+                    <label for="${key}Y" class="coordinate-label">Y:</label>
+                    <input id="${key}Y" name="${key}Y" type="number" step="any" required class="coordinate-input" value="${defaultY}">
+                </div>
+            </div>
+        `;
+
+        return pointForm;
     }
 
     private renderSwitchElement(key: string, config: any, currentSwitch: string = ''): HTMLDivElement {
@@ -794,48 +893,6 @@ export class ViewWindow {
         return colorForm;
     }
 
-    private handleFormSubmit(e: SubmitEvent, form: HTMLFormElement): void {
-        e.preventDefault();
-
-        const formData = new FormData(form);
-        let parameters: any = {};
-
-        formData.forEach((value, key) => {
-            parameters[key] = value;
-        });
-
-        const shapeType = parameters.type;
-        const shapeId = parseInt(parameters.id);
-        const isEditing = parameters.isEditing === 'true';
-
-        if (!shapeType || isNaN(shapeId)) {
-            console.error('Missing shape type or ID');
-            return;
-        }
-
-        if (isEditing) {
-            const existingShape = this._system.findShapeById(shapeId);
-            if (existingShape) {
-                existingShape.processParameters(parameters);
-                this.closeShapeModal();
-                this.draw();
-            }
-        } else {
-            let shape = (new ShapeFactory()).getShapeByType(shapeType, shapeId);
-            if (shape === null) {
-                return;
-            }
-
-            shape.processParameters(parameters);
-            this.closeShapeModal();
-            this._system.addShape(shape);
-            this.addShapeTab(shape, shapeType);
-
-            this._nextShapeId++;
-            this.draw();
-        }
-    }
-
     private addShapeTab(shape: Shape, type: string): void {
         const controlsList = <HTMLUListElement>document.getElementById('controlsList');
 
@@ -916,16 +973,21 @@ export class ViewWindow {
         switch (type.toLowerCase()) {
             case 'triangle':
                 return `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                        <path d="M12 2L22 20H2L12 2z"></path>
-                    </svg>`;
+                    <path d="M12 2L22 20H2L12 2z"></path>
+                </svg>`;
             case 'bezier':
                 return `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                        <path d="M4 16C8 4 16 20 20 8"></path>
-                    </svg>`;
+                    <path d="M4 16C8 4 16 20 20 8"></path>
+                </svg>`;
+            case 'cesaro':
+                return `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <path d="M4 18L8 10L12 18L16 10L20 18"></path>
+                    <path d="M6 14L10 14M14 14L18 14"></path>
+                </svg>`;
             default:
                 return `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                        <rect x="4" y="4" width="16" height="16" rx="2"></rect>
-                    </svg>`;
+                    <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                </svg>`;
         }
     }
 
